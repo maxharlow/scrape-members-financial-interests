@@ -8,6 +8,7 @@ const csvWriter = require('csv-write-stream')
 const http = highland.wrapCallback((location, callback) => {
     const wrapper = location => {
         return callbackInner => {
+	    console.log('Requesting: ' + location)
             request(location, (error, response) => {
                 const failure = error ? error : (response.statusCode >= 400 && response.statusCode !== 404) ? new Error(response.statusCode + ': ' + response.request.href) : null
                 callbackInner(failure, response)
@@ -67,7 +68,7 @@ function contents(response) {
         }, [])
         return items.map(item => {
             const amountMatch = item.match(/£\d+(,\d{3})*(\.\d{2})?/)
-            const registeredMatch = item.match(/\(Registered (.*)\)/)
+            const registeredMatch = item.match(/\(Registered (.*?)\)/)
             return {
                 name: name,
                 editionDeclared: edition,
