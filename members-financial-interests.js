@@ -8,14 +8,14 @@ const csvWriter = require('csv-write-stream')
 const http = highland.wrapCallback((location, callback) => {
     const wrapper = location => {
         return callbackInner => {
-	    console.log('Requesting: ' + location)
-            request(location, (error, response) => {
+            request.defaults({ timeout: 30 * 1000 })(location, (error, response) => {
                 const failure = error ? error : (response.statusCode >= 400 && response.statusCode !== 404) ? new Error(response.statusCode + ': ' + response.request.href) : null
+                console.log('Requested: ' + location + ' (' + (response ? response.statusCode : 'no response') + ')')
                 callbackInner(failure, response)
             })
         }
     }
-    retryMe(wrapper(location), callback)
+    retryMe(wrapper(location), { factor: 1.5 }, callback)
 })
 
 function range(from, to) {
@@ -26,13 +26,18 @@ function locations() {
     const years = range(10, new Date().getFullYear() - 2000)
     const months = range(1, 12).map(n => n < 10 ? '0' + n: '' + n)
     const days = range(1, 31).map(n => n < 10 ? '0' + n: '' + n)
-    const keys = years.map(year => months.map(month => days.map(day => year + month + day))).join(',').split(',').filter(key => Number(key) >= 100525)
+    const keys = years.map(year => months.map(month => days.map(day => year + month + day))).join(',').split(',').filter(key => {
+        const firstPossibleEntry = 100525 // state opening of the 2010-12 parliament
+        const lastPossibleEntry = Number(new Date().toISOString().substr(2, 8).replace(/-/g, '')) // today
+        const keyNumber = Number(key)
+        return keyNumber >= firstPossibleEntry && keyNumber <= lastPossibleEntry
+    })
     return keys.map(key => 'http://www.publications.parliament.uk/pa/cm/cmregmem/' + key + '/part1contents.htm')
 }
 
 function members(response) {
     const document = cheerio.load(response.body)
-    return document('td > p > a[href$=htm]').not('[href="introduction.htm"]').get().map(entry => {
+    return document('td > p > a[href$=htm], #mainTextBlock > p > a[href$=htm]').not('[href="introduction.htm"]').get().map(entry => {
         return response.request.href.replace('part1contents.htm', '') + cheerio(entry).attr('href')
     })
 }
