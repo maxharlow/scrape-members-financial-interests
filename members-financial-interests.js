@@ -81,7 +81,7 @@ function contents(response) {
                 section: cheerio(heading).text().trim(),
                 item: item,
                 amount: amountMatch ? amountMatch[0] : '',
-                registered: registeredMatch ? new Date(registeredMatch[1]).toISOString().substr(0, 10) : ''
+                registered: registeredMatch ? new Date(registeredMatch[3]).toISOString().substr(0, 10) : ''
             }
         })
     })
