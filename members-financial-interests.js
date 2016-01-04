@@ -48,7 +48,7 @@ function contents(response) {
     const name = document('h2').text().trim().split(' (')[0]
     const edition = response.request.href.split('/')[6]
     const headings = document('td > h3, td > strong, td > p:has(strong), #mainTextBlock > h3, td > strong, #mainTextBlock > p:has(strong)').get().filter(heading => {
-        return cheerio(heading).text().trim().match(/^\d{1,2}\. /) // filter out those that look like a heading but aren't
+        return cheerio(heading).text().trim().match(/^\d{1,2}\./) // filter out those that look like a heading but aren't
     })
     return headings.map((heading, i) => {
         const nextHeading = i === headings.length ? 'div' : headings[i + 1] // if this heading is the last, look for a <div> signifying the end
@@ -58,7 +58,7 @@ function contents(response) {
             if (!valid(blockText)) {
                 return a
             }
-            else if (blockText.match(/^(Address of |Amount of |Value of |if donation in kind:|Date of receipt|Date of acceptance|Date the loan was entered into|Loan entered into|Date the loan is due to be repaid|Repayment|Donor status|Rate of interest|Whether or not any security has been given|Security offered|No security given|\(Registered|Date of visit|Destination of visit|Destination: |Purpose of visit|\d\)|\(\d\)|\d\.)|(overdraft limit)/)) {
+            else if (blockText.match(/^(Address of |Amount of |Value of |if donation in kind:|Date of receipt|Date of acceptance|Date the loan was entered into|Loan entered into|Date the loan is due to be repaid|Repayment|Donor status|Rate of interest|Whether or not any security has been given|Security offered|No security given|\(Registered|Date of visit|Destination of visit|Destination: |Purpose of visit|\d{1,2}\)|\(\d{1,2}\)|\d{1,2}\.)|(overdraft limit)/i)) {
                 a[a.length - 1] += '\n' + blockText
                 return a
             }
@@ -90,8 +90,8 @@ function contents(response) {
 function valid(text) {
     return text !== ''
         && text !== '.'
-        && !text.match(/Contents \(Part 1\)/)
-        && !text.match(/(Donations to my constituency party or association|Donations to the constituency party or association|Donations to support my campaign|Support in the capacity as an MP|Other donations)/)
+        && !text.match(/^(Previous[\s\S]*Contents|Contents[\s\S]*Next)/)
+        && !text.match(/^(Donations to my constituency|Donations to the constituency|Donations to support|Support in the capacity as|Payments recieved in my capacity as|Other donations|Other support)/i)
 }
 
 var data = []
