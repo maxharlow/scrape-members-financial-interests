@@ -45,9 +45,9 @@ function members(response) {
 function contents(response) {
     const document = cheerio.load(response.body)
     if (document('td p').text().indexOf('Nil') >= 0) return []
-    const name = document('h2').text().split(' (')[0]
+    const name = document('h2').text().trim().split(' (')[0]
     const edition = response.request.href.split('/')[6]
-    const headings = document('td > h3, td > strong, td > p:has(strong)').get().filter(heading => {
+    const headings = document('td > h3, td > strong, td > p:has(strong), #mainTextBlock > h3, td > strong, #mainTextBlock > p:has(strong)').get().filter(heading => {
         return cheerio(heading).text().trim().match(/^\d{1,2}\. /) // filter out those that look like a heading but aren't
     })
     return headings.map((heading, i) => {
