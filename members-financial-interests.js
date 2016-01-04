@@ -90,7 +90,7 @@ function contents(response) {
 function valid(text) {
     return text !== ''
         && text !== '.'
-        && !text.match(/^(Previous[\s\S]*Contents|Contents[\s\S]*Next)/)
+        && !text.match(/^(Previous[\s\S]+Contents|Contents[\s\S]+Next)/)
         && !text.match(/^(Donations to my constituency|Donations to the constituency|Donations to support|Support in the capacity as|Payments recieved in my capacity as|Other donations|Other support)/i)
 }
 
