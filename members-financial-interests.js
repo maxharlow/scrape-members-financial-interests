@@ -73,7 +73,7 @@ function contents(response) {
         }, [])
         return items.map(item => {
             const amountMatch = item.match(/£\d+(,\d{3})*(\.\d{2})?/)
-            const registeredMatch = item.match(/\([Registered ]?(\d{1,2} \S+ \d{4})/)
+            const registeredMatch = item.match(/\((:?Registered)?(:? )*(\d{1,2} \S+ \d{4})/)
             return {
                 name: name,
                 editionDeclared: edition,
