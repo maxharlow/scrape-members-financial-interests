@@ -102,6 +102,16 @@ function dedupe(row) {
     else data.push(row)
 }
 
+function alphachronological(a, b) {
+    if (a.name.toLowerCase() < b.name.toLowerCase()) return -1
+    if (a.name.toLowerCase() > b.name.toLowerCase()) return  1
+    if (a.editionDeclared < b.editionDeclared) return -1
+    if (a.editionDeclared > b.editionDeclared) return  1
+    if (a.text < b.text) return -1
+    if (a.text > b.text) return  1
+    return 0
+}
+
 highland(locations())
     .flatMap(http)
     .errors((e, push) => !e.message.startsWith('404') ? push(e) : null)
@@ -113,6 +123,7 @@ highland(locations())
     .errors(e => console.log(e.stack))
     .done(() => {
         highland(data)
+            .sortBy(alphachronological)
             .through(csvWriter())
             .pipe(fs.createWriteStream('members-financial-interests.csv'))
     })
