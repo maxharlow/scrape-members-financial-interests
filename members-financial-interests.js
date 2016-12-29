@@ -1,21 +1,20 @@
-const highland = require('highland')
-const request = require('request')
-const retryMe = require('retry-me')
-const cheerio = require('cheerio')
-const fs = require('fs')
-const csvWriter = require('csv-write-stream')
+const Highland = require('highland')
+const Request = require('request')
+const RetryMe = require('retry-me')
+const Cheerio = require('cheerio')
+const FS = require('fs')
+const CSVWriter = require('csv-write-stream')
 
-const http = highland.wrapCallback((location, callback) => {
+const http = Highland.wrapCallback((location, callback) => {
     const wrapper = location => {
         return callbackInner => {
-            request.defaults({ timeout: 30 * 1000 })(location, (error, response) => {
-                const failure = error ? error : (response.statusCode >= 400 && response.statusCode !== 404) ? new Error(response.statusCode + ': ' + response.request.href) : null
-                console.log('Requested: ' + location + ' (' + (response ? response.statusCode : 'no response') + ')')
+            Request.defaults({ timeout: 30 * 1000 })(location, (error, response) => {
+                const failure = error ? error : response.statusCode >= 400 ? new Error(response.statusCode + ' for ' + response.request.href) : null
                 callbackInner(failure, response)
             })
         }
     }
-    retryMe(wrapper(location), { factor: 1.5 }, callback)
+    RetryMe(wrapper(location), { factor: 1.5 }, callback)
 })
 
 function range(from, to) {
@@ -32,28 +31,34 @@ function locations() {
         const keyNumber = Number(key)
         return keyNumber >= firstPossibleEntry && keyNumber <= lastPossibleEntry
     })
-    return keys.map(key => 'http://www.publications.parliament.uk/pa/cm/cmregmem/' + key + '/part1contents.htm')
+    return keys.map(key => {
+        const title = key > 151214 ? 'contents' : 'part1contents' // title changed on this date
+        return `http://www.publications.parliament.uk/pa/cm/cmregmem/${key}/${title}.htm`
+    })
 }
 
 function members(response) {
-    const document = cheerio.load(response.body)
+    const document = Cheerio.load(response.body)
+    if (document('h1').text().trim() === 'Page cannot be found') return []
+    console.log('Processing register ' + response.request.href.split('/')[6] + '...')
     return document('td > p > a[href$=htm], #mainTextBlock > p > a[href$=htm]').not('[href="introduction.htm"]').get().map(entry => {
-        return response.request.href.replace('part1contents.htm', '') + cheerio(entry).attr('href')
+        const base = response.request.href.replace('part1contents.htm', '').replace('contents.htm', '')
+        return base + Cheerio(entry).attr('href')
     })
 }
 
 function contents(response) {
-    const document = cheerio.load(response.body)
+    const document = Cheerio.load(response.body)
     if (document('td p').text().indexOf('Nil') >= 0) return []
     const name = document('h2').text().trim().split(' (')[0]
     const edition = response.request.href.split('/')[6]
     const headings = document('td > h3, td > strong, td > p:has(strong), #mainTextBlock > h3, td > strong, #mainTextBlock > p:has(strong)').get().filter(heading => {
-        return cheerio(heading).text().trim().match(/^\d{1,2}\./) // filter out those that look like a heading but aren't
+        return Cheerio(heading).text().trim().match(/^\d{1,2}\./) // filter out those that look like a heading but aren't
     })
     return headings.map((heading, i) => {
         const nextHeading = i === headings.length ? 'div' : headings[i + 1] // if this heading is the last, look for a <div> signifying the end
-        const items = cheerio(heading).nextUntil(nextHeading).get().reduce((a, item) => {
-            const block = cheerio(item)
+        const items = Cheerio(heading).nextUntil(nextHeading).get().reduce((a, item) => {
+            const block = Cheerio(item)
             const blockText = block.text().trim().replace(/^\((a|b|c)\)/, '').trim()
             if (!valid(blockText)) {
                 return a
@@ -75,11 +80,11 @@ function contents(response) {
             const amountMatch = item.match(/£\d+(,\d{3})*(\.\d{2})?/)
             const registeredMatch = item.match(/\((:?Registered)?(:? )*(\d{1,2} \S+ \d{4})/)
             return {
-                name: name,
+                name,
                 editionDeclared: edition,
                 editionLastSeen: edition,
-                section: cheerio(heading).text().trim(),
-                item: item,
+                section: Cheerio(heading).text().trim(),
+                item,
                 amount: amountMatch ? amountMatch[0] : '',
                 registered: registeredMatch ? new Date(registeredMatch[3]).toISOString().substr(0, 10) : ''
             }
@@ -112,18 +117,18 @@ function alphachronological(a, b) {
     return 0
 }
 
-highland(locations())
+Highland(locations())
     .flatMap(http)
-    .errors((e, push) => !e.message.startsWith('404') ? push(e) : null)
     .flatMap(members)
     .flatMap(http)
     .flatMap(contents)
     .flatten()
     .map(dedupe)
-    .errors(e => console.log(e.stack))
+    .errors(e => console.error(e.stack))
     .done(() => {
-        highland(data)
+        console.log('Sorting...')
+        Highland(data)
             .sortBy(alphachronological)
-            .through(csvWriter())
-            .pipe(fs.createWriteStream('members-financial-interests.csv'))
+            .through(CSVWriter())
+            .pipe(FS.createWriteStream('members-financial-interests.csv'))
     })

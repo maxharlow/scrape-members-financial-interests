@@ -2,13 +2,10 @@
     "name": "scrape-members-financial-interests",
     "private": true,
     "dependencies": {
-        "highland": "2.5.x",
-        "request": "2.67.x",
+        "highland": "2.10.x",
+        "request": "2.79.x",
         "retry-me": "1.0.x",
-        "cheerio": "0.19.x",
-        "csv-write-stream": "1.0.x"
-    },
-    "scripts": {
-        "start": "node members-financial-interests"
+        "cheerio": "0.22.x",
+        "csv-write-stream": "2.0.x"
     }
 }
