@@ -9,9 +9,8 @@ const FSExtra = require('fs-extra')
 async function request(location) {
     const url = typeof location === 'object' ? location.url : location
     const hash = Crypto.createHash('sha1').update(url).digest('hex')
-    const useCache = location.useCache !== undefined ? location.useCache : true
     const isCached = await FSExtra.pathExists(`cache/${hash}`)
-    if (isCached && useCache) {
+    if (isCached) {
         console.log(`Cached: ${url}...`)
         const cache = await FSExtra.readFile(`cache/${hash}`)
         return {
@@ -36,7 +35,7 @@ async function request(location) {
         }
     })
     const response = await instance(location)
-    if (useCache) {
+    if (!response.data.includes('Page cannot be found')) { // as these should be 200s
         await FSExtra.ensureDir('cache')
         await FSExtra.writeJson(`cache/${hash}`, response.data)
     }
