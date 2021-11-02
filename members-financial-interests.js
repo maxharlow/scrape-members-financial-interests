@@ -1,10 +1,9 @@
-const Crypto = require('crypto')
-const Ix = require('ix')
-const Axios = require('axios')
-const AxiosRetry = require('axios-retry')
-const Cheerio = require('cheerio')
-const PapaParse = require('papaparse')
-const FSExtra = require('fs-extra')
+import Crypto from 'crypto'
+import FSExtra from 'fs-extra'
+import Axios from 'axios'
+import AxiosRetry from 'axios-retry'
+import Scramjet from 'scramjet'
+import Cheerio from 'cheerio'
 
 async function request(location) {
     const url = typeof location === 'object' ? location.url : location
@@ -159,36 +158,17 @@ function alphachronological(a, b) {
     return 0
 }
 
-function csv() {
-    let headerWritten = false
-    return function* (record) {
-        if (!headerWritten) {
-            const header = PapaParse.unparse([Object.keys(record)])
-            yield header + '\n'
-            headerWritten = true
-        }
-        const entry = PapaParse.unparse([Object.values(record)])
-        yield entry + '\n'
-    }
-}
-
-async function write(filename) {
-    await FSExtra.remove(filename)
-    return contents => FSExtra.appendFile(filename, contents)
-}
-
 async function run() {
-    const all = await Ix.AsyncIterable.from(locations())
+    const all = await Scramjet.DataStream.from(locations())
         .map(request)
         .flatMap(members)
         .map(request)
         .flatMap(contents)
         .reduce(dedupe, [])
     const sorted = all.sort(alphachronological)
-    return Ix.AsyncIterable.from(sorted)
-        .flatMap(csv())
-        .forEach(await write('members-financial-interests.csv'))
-        .finally(() => console.log('Done!'))
+    await Scramjet.DataStream.from(sorted)
+        .CSVStringify()
+        .pipe(FSExtra.createWriteStream('members-financial-interests.csv'))
 }
 
 run()

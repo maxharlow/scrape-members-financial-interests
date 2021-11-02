@@ -5,6 +5,4 @@ Parliament [publishes](http://www.publications.parliament.uk/pa/cm/cmregmem.htm)
 
 This scrapes the register into a CSV. Since the data is published as a series of documents, this tries to bring some structure to the data, but sometimes this will be incorrect. It's probably not wise to use this as your sole source for anything important.
 
-Requires [Node](https://nodejs.org/).
-
 Install the dependencies with `npm install`, then run `node members-financial-interests`. Produces a file named `members-financial-interests.csv`.
