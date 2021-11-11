@@ -55,10 +55,10 @@ function locations() {
     const months = range(1, 12).map(n => n < 10 ? '0' + n: '' + n)
     const days = range(1, 31).map(n => n < 10 ? '0' + n: '' + n)
     const editions = years.map(year => months.map(month => days.map(day => year + month + day))).join(',').split(',').filter(edition => {
-        const firstPossibleEntry = 100525 // state opening of the 2010-12 parliament
+        const firstEntry = 100525 // first possible entry, state opening of the 2010-12 parliament
         const lastPossibleEntry = Number(new Date().toISOString().substr(2, 8).replace(/-/g, '')) // today
         const editionNumber = Number(edition)
-        return editionNumber >= firstPossibleEntry && editionNumber <= lastPossibleEntry
+        return editionNumber >= firstEntry && editionNumber <= lastPossibleEntry
     })
     return editions.map(edition => {
         const title = edition > 151214 ? 'contents' : 'part1contents' // title changed on this date
@@ -77,12 +77,14 @@ function members(response) {
     const document = Cheerio.load(response.data)
     if (document('h1').text().trim() === 'Page cannot be found') return []
     console.log(`Processing register ${response.passthrough.edition}...`)
+    const base = response.passthrough.url.replace('part1contents.htm', '').replace('contents.htm', '')
     return document('td > p > a[href$=htm], #mainTextBlock > p > a[href$=htm]').not('[href="introduction.htm"]').get().map(entry => {
-        const base = response.passthrough.url.replace('part1contents.htm', '').replace('contents.htm', '')
+        const url = base + encodeURIComponent(Cheerio(entry).attr('href'))
         return {
-            url: base + encodeURIComponent(Cheerio(entry).attr('href')),
+            url,
             passthrough: {
-                edition: response.passthrough.edition
+                edition: response.passthrough.edition,
+                editionPage: url.split('/').pop()
             }
         }
     })
@@ -136,26 +138,29 @@ function contents(response) {
             else return a.concat(blockText)
         }, [])
         return items.map(item => {
-            const timeHours = item.match(/[0-9]*\.?[0-9]+ ?ho?u?rs?/i)?.[0]
-            const timeMinutes = item.match(/[0-9]+ ?minu?t?e?s?/i)?.[0]
+            const timeHours = item.match(/(?<=\s)[0-9]*(\.|\-|–)?[0-9]+ ?(H|h)(r|our)s?/)?.[0]
+            const timeMinutes = item.match(/(?<=\s)[0-9]+ ?(M|m)(in|inute)s?/)?.[0]
+            const time = [timeHours, timeMinutes].filter(x => x).join(' ')
             return {
                 name,
-                editionDeclared: response.passthrough.edition,
-                editionLastSeen: response.passthrough.edition,
+                editionSeenFirst: response.passthrough.edition,
+                editionSeenLast: response.passthrough.edition,
+                editionPageFirst: response.passthrough.editionPage,
+                editionPageLast: response.passthrough.editionPage,
                 section: Cheerio(heading).text().trim(),
                 item,
-                amount: item.match(/£\d+(,\d{3})*(\.\d{2})?/)?.[0],
-                time: [timeHours, timeMinutes].join(' '),
-                registered: item.match(/\((:?Registered)?(:? )*(\d{1,2} \S+ \d{4})/)?.[0],
+                amount: item.match(/£[0-9]+(,[0-9]{3})*(\.[0-9]{2})?/)?.[0],
+                time,
+                registered: item.match(/(?<=Registered:? )[0-9]{1,2} [A-Za-z]+ [0-9]{4}/)?.[0],
             }
         })
     })
 }
 
 function dedupe(a, row) {
-    const current = a.find(existing => existing.name === row.name && existing.item === row.item && existing.editionDeclared !== row.editionDeclared)
+    const current = a.find(existing => existing.name === row.name && existing.item === row.item && existing.editionSeenFirst !== row.editionSeenFirst)
     if (current) {
-        current.editionLastSeen = row.editionLastSeen
+        current.editionSeenLast = row.editionSeenLast
         return a
     }
     else return a.concat(row)
@@ -164,8 +169,8 @@ function dedupe(a, row) {
 function alphachronological(a, b) {
     if (a.name.toLowerCase() < b.name.toLowerCase()) return -1
     if (a.name.toLowerCase() > b.name.toLowerCase()) return  1
-    if (a.editionDeclared < b.editionDeclared) return -1
-    if (a.editionDeclared > b.editionDeclared) return  1
+    if (a.editionSeenFirst < b.editionSeenFirst) return -1
+    if (a.editionSeenFirst > b.editionSeenFirst) return  1
     if (a.text < b.text) return -1
     if (a.text > b.text) return  1
     return 0
