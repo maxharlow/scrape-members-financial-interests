@@ -136,16 +136,17 @@ function contents(response) {
             else return a.concat(blockText)
         }, [])
         return items.map(item => {
-            const amountMatch = item.match(/£\d+(,\d{3})*(\.\d{2})?/)
-            const registeredMatch = item.match(/\((:?Registered)?(:? )*(\d{1,2} \S+ \d{4})/)
+            const timeHours = item.match(/[0-9]*\.?[0-9]+ ?ho?u?rs?/i)?.[0]
+            const timeMinutes = item.match(/[0-9]+ ?minu?t?e?s?/i)?.[0]
             return {
                 name,
                 editionDeclared: response.passthrough.edition,
                 editionLastSeen: response.passthrough.edition,
                 section: Cheerio(heading).text().trim(),
                 item,
-                amount: amountMatch ? amountMatch[0] : '',
-                registered: registeredMatch ? new Date(registeredMatch[3]).toISOString().substr(0, 10) : ''
+                amount: item.match(/£\d+(,\d{3})*(\.\d{2})?/)?.[0],
+                time: [timeHours, timeMinutes].join(' '),
+                registered: item.match(/\((:?Registered)?(:? )*(\d{1,2} \S+ \d{4})/)?.[0],
             }
         })
     })
