@@ -4,6 +4,7 @@ import Axios from 'axios'
 import AxiosRetry from 'axios-retry'
 import Scramjet from 'scramjet'
 import Cheerio from 'cheerio'
+import HTMLToText from 'html-to-text'
 
 async function request(location) {
     const url = typeof location === 'object' ? location.url : location
@@ -87,6 +88,18 @@ function members(response) {
     })
 }
 
+function text(html) {
+    const options = {
+        selectors: [
+            { selector: 'a', options: { ignoreHref: true } },
+            { selector: 'ul', options: { itemPrefix: ' ' } }
+        ],
+        wordwrap: false,
+        preserveNewlines: true
+    }
+    return HTMLToText.convert(html, options).trim().replace(/^\((a|b|c)\)/, '').trim()
+}
+
 function valid(text) {
     return text !== ''
         && text !== '.'
@@ -105,7 +118,7 @@ function contents(response) {
         const nextHeading = i === headings.length ? 'div' : headings[i + 1] // if this heading is the last, look for a <div> signifying the end
         const items = Cheerio(heading).nextUntil(nextHeading).get().reduce((a, item) => {
             const block = Cheerio(item)
-            const blockText = block.text().trim().replace(/^\((a|b|c)\)/, '').trim()
+            const blockText = text(block.html())
             if (!valid(blockText)) {
                 return a
             }

@@ -7,6 +7,7 @@
         "axios-retry": "3.2.x",
         "cheerio": "0.22.x",
         "fs-extra": "10.0.x",
+        "html-to-text": "8.1.x",
         "scramjet": "4.36.x"
     }
 }
