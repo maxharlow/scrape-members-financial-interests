@@ -87,6 +87,13 @@ function members(response) {
     })
 }
 
+function valid(text) {
+    return text !== ''
+        && text !== '.'
+        && !text.match(/^(Previous[\s\S]+Contents|Contents[\s\S]+Next)/)
+        && !text.match(/^(Donations to my constituency|Donations to the constituency|Donations to support|Support in the capacity as|Payments recieved in my capacity as|Other donations|Other support)/i)
+}
+
 function contents(response) {
     const document = Cheerio.load(response.data)
     if (document('td p').text().indexOf('Nil') >= 0) return []
@@ -130,14 +137,6 @@ function contents(response) {
         })
     })
 }
-
-function valid(text) {
-    return text !== ''
-        && text !== '.'
-        && !text.match(/^(Previous[\s\S]+Contents|Contents[\s\S]+Next)/)
-        && !text.match(/^(Donations to my constituency|Donations to the constituency|Donations to support|Support in the capacity as|Payments recieved in my capacity as|Other donations|Other support)/i)
-}
-
 
 function dedupe(a, row) {
     const current = a.find(existing => existing.name === row.name && existing.item === row.item && existing.editionDeclared !== row.editionDeclared)
