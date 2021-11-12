@@ -151,7 +151,7 @@ function contents(response) {
                 item,
                 amount: item.match(/£[0-9]+(,[0-9]{3})*(\.[0-9]{2})?/)?.[0],
                 time,
-                registered: item.match(/(?<=Registered:? )[0-9]{1,2} [A-Za-z]+ [0-9]{4}/)?.[0],
+                registered: item.match(/(?<=\(Registered:? )(.+)(?=\)$)/g)?.pop(),
             }
         })
     })
