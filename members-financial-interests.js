@@ -138,8 +138,8 @@ function contents(response) {
             else return a.concat(blockText)
         }, [])
         return items.map(item => {
-            const timeHours = item.match(/(?<=\s)[0-9]*(\.|\-|–)?[0-9]+ ?(H|h)(r|our)s?/)?.[0]
-            const timeMinutes = item.match(/(?<=\s)[0-9]+ ?(M|m)(in|inute)s?/)?.[0]
+            const timeHours = item.match(/(?<=\s)[0-9]*(\.|\-|–)?[0-9]+ ?(H|h)(r|our)s?/g)?.pop()
+            const timeMinutes = item.match(/(?<=\s)[0-9]+ ?(M|m)(in|inute)s?/g)?.pop()
             const time = [timeHours, timeMinutes].filter(x => x).join(' ')
             return {
                 name,
@@ -149,7 +149,7 @@ function contents(response) {
                 editionPageLast: response.passthrough.editionPage,
                 section: Cheerio(heading).text().trim(),
                 item,
-                amount: item.match(/£[0-9]+(,[0-9]{3})*(\.[0-9]{2})?/)?.[0],
+                amount: item.match(/£[0-9]+(,[0-9]{3})*(\.[0-9]{2})?/g)?.pop(),
                 time,
                 registered: item.match(/(?<=\(Registered:? )(.+)(?=\)$)/g)?.pop(),
             }
