@@ -11,7 +11,7 @@ async function request(location) {
     const hash = Crypto.createHash('sha1').update(url).digest('hex')
     const isCached = await FSExtra.pathExists(`cache/${hash}`)
     if (isCached) {
-        console.log(`Cached: ${url}...`)
+        console.log(`Cached [${hash}]: ${url}...`)
         const cache = await FSExtra.readFile(`cache/${hash}`)
         return {
             url,
@@ -34,15 +34,20 @@ async function request(location) {
             return 5 * 1000
         }
     })
-    const response = await instance(location)
-    if (!response.data.includes('Page cannot be found')) { // as these should be 200s
-        await FSExtra.ensureDir('cache')
-        await FSExtra.writeJson(`cache/${hash}`, response.data)
+    try {
+        const response = await instance(location)
+        if (!response.data.includes('Page cannot be found')) { // as these should be 200s
+            await FSExtra.ensureDir('cache')
+            await FSExtra.writeJson(`cache/${hash}`, response.data)
+        }
+        return {
+            url,
+            data: response.data,
+            passthrough: location.passthrough
+        }
     }
-    return {
-        url,
-        data: response.data,
-        passthrough: location.passthrough
+    catch (e) {
+        return null
     }
 }
 
@@ -179,6 +184,7 @@ function alphachronological(a, b) {
 async function run() {
     const all = await Scramjet.DataStream.from(locations())
         .map(request)
+        .filter(x => x)
         .flatMap(members)
         .map(request)
         .flatMap(contents)

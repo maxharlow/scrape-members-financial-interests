@@ -3,7 +3,7 @@
     "type": "module",
     "private": true,
     "dependencies": {
-        "axios": "0.24.x",
+        "axios": "0.25.x",
         "axios-retry": "3.2.x",
         "cheerio": "0.22.x",
         "fs-extra": "10.0.x",
