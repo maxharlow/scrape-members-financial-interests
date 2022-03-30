@@ -60,7 +60,8 @@ function locations() {
     const months = range(1, 12).map(n => n < 10 ? '0' + n: '' + n)
     const days = range(1, 31).map(n => n < 10 ? '0' + n: '' + n)
     const editions = years.map(year => months.map(month => days.map(day => year + month + day))).join(',').split(',').filter(edition => {
-        const firstEntry = 100525 // first possible entry, state opening of the 2010-12 parliament
+        // const firstEntry = 100525 // first possible entry, state opening of the 2010-12 parliament
+        const firstEntry = 200000 // first register following the December 2019 election was January 2020
         const lastPossibleEntry = Number(new Date().toISOString().substr(2, 8).replace(/-/g, '')) // today
         const editionNumber = Number(edition)
         return editionNumber >= firstEntry && editionNumber <= lastPossibleEntry
